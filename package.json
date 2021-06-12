@@ -3,21 +3,23 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
-    "prestart": "esbuild src/index.ts --bundle --platform=node --format=esm > tmp.js",
+    "prestart": "esbuild src/index.ts --bundle --platform=node --format=cjs > tmp.js",
     "start": "node tmp.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "fun4wut",
   "license": "ISC",
   "devDependencies": {
+    "@types/find-package-json": "^1.2.0",
     "esbuild": "^0.12.8"
   },
   "dependencies": {
     "@babel/parser": "^7.14.5",
     "@babel/types": "^7.14.5",
     "@types/node": "^15.12.2",
+    "find-package-json": "^1.2.0",
     "lodash-es": "^4.17.21"
   }
 }

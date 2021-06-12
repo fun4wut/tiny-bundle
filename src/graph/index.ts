@@ -10,6 +10,10 @@ export class Graph {
     edges: Record<string, Array<ModNode>> = {}
     dict: Record<string, ModNode> = {}
 
+    containsNode(s: string) {
+        return !!this.dict[s]
+    }
+
     addEdges(node: ModNode) {
         this.dict[node.path] = node
         for (const s of node.depStr) {

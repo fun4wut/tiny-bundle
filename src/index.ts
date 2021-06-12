@@ -4,14 +4,14 @@ import find from 'find-package-json'
 import * as path from 'path'
 import { getExactName, getExactNpm } from './utils/file'
 import { Graph } from './graph'
-import { Program } from '@babel/types'
+import ast, { Program, Statement } from '@babel/types'
 
 
 export class Bundler {
     constructor(private initialEntry: string) {}
     private graph = new Graph()
     private pkgRoot = find(this.initialEntry).next().value
-
+    private body: Array<Statement>
     private getImports(prog: Program, filePath: string) {
         const imports = new Array<string>()
         for (const stmt of prog.body) {
@@ -52,7 +52,7 @@ export class Bundler {
         return this.graph.topSort()
     }
 
-    dump() {
+    processSingleFile() {
         
     }
 }

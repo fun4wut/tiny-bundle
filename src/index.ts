@@ -8,9 +8,11 @@ import { Program } from '@babel/types'
 
 
 export class Bundler {
+    constructor(private initialEntry: string) {}
     private graph = new Graph()
-    pkgRoot: finder.PackageWithPath
-    getImports(prog: Program, filePath: string) {
+    private pkgRoot = find(this.initialEntry).next().value
+
+    private getImports(prog: Program, filePath: string) {
         const imports = new Array<string>()
         for (const stmt of prog.body) {
             if (stmt.type === 'ImportDeclaration' || stmt.type === 'ExportNamedDeclaration') {
@@ -28,6 +30,7 @@ export class Bundler {
         }
         return imports
     }
+    
     private collectDependency = (entry: string) => {
         if (this.graph.containsNode(entry)) {
             return
@@ -43,10 +46,14 @@ export class Bundler {
         console.log(`${entry}'s deps collected`)
         imports.forEach(this.collectDependency)
     }
-    genDependencyArr(initial: string) {
-        this.pkgRoot = find(initialEntry).next().value
-        this.collectDependency(initial)
+
+    genDependencyArr() {
+        this.collectDependency(this.initialEntry)
         return this.graph.topSort()
+    }
+
+    dump() {
+        
     }
 }
 
@@ -54,6 +61,6 @@ const fileName = 'test/index.js' ?? process.argv[1]
 
 const initialEntry = path.join(process.cwd(), fileName)
 
-const bundler = new Bundler()
+const bundler = new Bundler(initialEntry)
 
-console.log(bundler.genDependencyArr(initialEntry))
+console.log(bundler.genDependencyArr())

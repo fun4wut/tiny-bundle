@@ -1,25 +1,40 @@
-import { IContext, ITraversePlugin } from "./types"
+import traverse, { NodePath } from '@babel/traverse'
+import JSParser from '@babel/parser'
+import * as ast from '@babel/types'
+import { getExactName, getExactNpm } from '../utils/file';
+import { IContext } from './types';
+import { join, dirname } from 'path'
+import { readFileSync } from 'fs';
 
-export class Traverser {
-    plugins = new Array<ITraversePlugin>()
-    use(plug: ITraversePlugin) {
-        this.plugins.push(plug)
-        return this
-    }
 
-    compose(): ITraversePlugin {
-        const plugins = this.plugins
-        return function(ctx, next) {
-            let index = -1
-            return dispatch(0)
-            function dispatch(i: number) {
-                index = i
-                let fn = plugins[i]
-                if (i === plugins.length) {
-                    fn = next
-                }
-                return fn(ctx, dispatch.bind(null, i + 1))
-            }
+export function doTraverse(ctx: IContext) {
+    const { importsArr, pkgPath, filePath } = ctx
+    const res = JSParser.parse(readFileSync(filePath).toString(), {
+        sourceType: "module"
+    })
+    const handleImportExport = (path: NodePath<ast.ImportDeclaration | ast.ExportNamedDeclaration>) => {
+        const stmt = path.node
+        if (!stmt.source) {
+            return
+        }
+        const source = stmt.source.value
+        if (source.startsWith('.')) { // 相对路径
+            importsArr.push(getExactName(join(dirname(filePath), source)))
+        } else { // npm package
+            importsArr.push(getExactNpm(join(pkgPath, '../node_modules', source)))
         }
     }
+    try {
+        traverse(res, {
+            ImportDeclaration: handleImportExport,
+            ExportNamedDeclaration: handleImportExport,
+            VariableDeclaration(path) {
+                
+            }
+        })
+    } catch (error) {
+        console.log('err', ctx)
+        throw new Error(error);
+    }
+
 }

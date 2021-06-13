@@ -1,4 +1,5 @@
 import * as JSParser from '@babel/parser'
+import traverse from '@babel/traverse'
 import { readFileSync } from 'fs'
 import find from 'find-package-json'
 import * as path from 'path'
@@ -6,40 +7,29 @@ import { Graph } from './graph'
 import ast, { Program, Statement } from '@babel/types'
 import { SymTbl } from './symbol'
 import { ImportsPlugin } from './traverse/imports'
-import { DeclPlugin } from './traverse/decl'
 import { IContext } from './traverse/types'
-import { Traverser } from './traverse'
-import { CommonPlugin } from './traverse/common'
-
+import { doTraverse } from './traverse'
 
 export class Bundler {
     constructor(private initialEntry: string) {
-        this.traverser
-            .use(ImportsPlugin)
-            .use(DeclPlugin)
-            .use(CommonPlugin)
+        this.pkgRoot = find(this.initialEntry).next().value
     }
     private graph = new Graph()
     private symTbl = new SymTbl()
-    private traverser = new Traverser()
-    private pkgRoot = find(this.initialEntry).next().value
+    private pkgRoot: find.PackageWithPath
     private body: Array<Statement>
-    private getImports(prog: Program, filePath: string) {
+    private traverseFile(filePath: string) {
         const imports = new Array<string>()
         const bodyPart = new Array<Statement>()
-        for (const stmt of prog.body) {
-            const ctx: IContext = {
-                importsArr: imports,
-                filePath,
-                pkgPath: this.pkgRoot.__path,
-                body: bodyPart,
-                isSpecialStmt: false,
-                stmt,
-                symTbl: this.symTbl
-            }
-            const fn = this.traverser.compose()
-            fn(ctx, () => console.log('traverse done'))
+        const ctx: IContext = {
+            importsArr: imports,
+            filePath,
+            pkgPath: this.pkgRoot.__path,
+            body: bodyPart,
+            isSpecialStmt: false,
+            symTbl: this.symTbl
         }
+        doTraverse(ctx)
         return imports
     }
     
@@ -47,10 +37,7 @@ export class Bundler {
         if (this.graph.containsNode(entry)) {
             return
         }
-        const res = JSParser.parse(readFileSync(entry).toString(), {
-            sourceType: "module"
-        })
-        const imports = this.getImports(res.program, entry)
+        const imports = this.traverseFile(entry)
         this.graph.addEdges({
             path: entry,
             depStr: imports

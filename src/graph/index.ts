@@ -3,7 +3,7 @@ export interface ModNode {
     path: string
     depStr: Array<string>
     depNode?: Array<ModNode>
-    prog: ast.Program
+    // prog: ast.Program
 }
 
 

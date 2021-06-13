@@ -8,6 +8,7 @@ export const ImportsPlugin: ITraversePlugin = (ctx, next) => {
     switch (stmt.type) {
         case 'ImportDeclaration':
         case 'ExportNamedDeclaration':
+            ctx.isSpecialStmt = true
             if (!stmt.source) {
                 break
             }

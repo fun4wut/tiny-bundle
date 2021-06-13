@@ -47,7 +47,14 @@
 | 顶层变量 `var`, `let`, `const`, `class` | 顶层 `var` 声明，`init` 中定义 |
 | 顶层语句                                | `init` 中使用           |
 
+## 实用的包
+- [Babel Parser(Code -> AST)](https://babeljs.io/docs/en/babel-parser)
+- [Babel Traverse(DFS遍历AST)](https://babeljs.io/docs/en/babel-traverse)
+- [Babel Template(Template -> AST)](https://babeljs.io/docs/en/babel-template)
+- [Babel Generator(AST -> Code)](https://babeljs.io/docs/en/babel-generator)
+
 ## Reference
+- [Babel Traverse文档](https://github.com/jamiebuilds/babel-handbook/blob/master/translations/en/plugin-handbook.md#toc-traversal)
 - [ESBuild设计文档](https://github.com/evanw/esbuild/blob/master/docs/architecture.md)
 - [Node.js Module Wrapper](https://nodejs.org/api/modules.html#modules_the_module_wrapper)
 - [基于esbuild的universal bundler设计](https://juejin.cn/post/6940250185322725390)

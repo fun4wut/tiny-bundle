@@ -9,6 +9,7 @@ import { ImportsPlugin } from './traverse/imports'
 import { DeclPlugin } from './traverse/decl'
 import { IContext } from './traverse/types'
 import { Traverser } from './traverse'
+import { CommonPlugin } from './traverse/common'
 
 
 export class Bundler {
@@ -16,6 +17,7 @@ export class Bundler {
         this.traverser
             .use(ImportsPlugin)
             .use(DeclPlugin)
+            .use(CommonPlugin)
     }
     private graph = new Graph()
     private symTbl = new SymTbl()
@@ -24,12 +26,16 @@ export class Bundler {
     private body: Array<Statement>
     private getImports(prog: Program, filePath: string) {
         const imports = new Array<string>()
+        const bodyPart = new Array<Statement>()
         for (const stmt of prog.body) {
             const ctx: IContext = {
                 importsArr: imports,
                 filePath,
                 pkgPath: this.pkgRoot.__path,
-                stmt
+                body: bodyPart,
+                isSpecialStmt: false,
+                stmt,
+                symTbl: this.symTbl
             }
             const fn = this.traverser.compose()
             fn(ctx, () => console.log('traverse done'))

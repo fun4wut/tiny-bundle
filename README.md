@@ -18,7 +18,6 @@
   - [ ] Namespace
 - 优化
   - [ ] Parallel
-  - [ ] Duplicate Name
   - [ ] Tree Shaking
   - [ ] Dead Code Elimination
 ## 思路
@@ -26,13 +25,28 @@
 1. 根据给定入口，进行依赖收集，获取所有待打包文件
 2. 拓扑排序，确定打包顺序
 3. runtime代码注入
-4. 变量命名修改
+4. 消除同名变量
 5. 按顺序写入一份文件
 
-## Bundle的一般规则
+## Bundle规则(纯ESM情况)
 
 | 源文件                                  | 打包后                  |
 | --------------------------------------- | ----------------------- |
 | 顶层函数 `function`                     | 在顶层进行定义          |
-| 顶层变量 `var`, `let`, `const`, `class` | 顶层声明，`init` 中定义 |
+| 顶层变量 `var`, `let`, `const`, `class` | 顶层 `var` 定义          |
+| 顶层语句                                | 顶层中使用              |
+| 别名导入 `import { x as y } from 'bar'` | 无视别名，仍然使用 `x`     |
+| 默认导入 `import z from 'foo'`          | 使用 `foo_default` 代替 `z` |
+
+## Bundle规则(ESM、CJS混编情况)
+
+| 源文件                                  | 打包后                  |
+| --------------------------------------- | ----------------------- |
+| 顶层函数 `function`                     | 在顶层进行定义          |
+| 顶层变量 `var`, `let`, `const`, `class` | 顶层 `var` 声明，`init` 中定义 |
 | 顶层语句                                | `init` 中使用           |
+
+## Reference
+- [ESBuild设计文档](https://github.com/evanw/esbuild/blob/master/docs/architecture.md)
+- [Node.js Module Wrapper](https://nodejs.org/api/modules.html#modules_the_module_wrapper)
+- [基于esbuild的universal bundler设计](https://juejin.cn/post/6940250185322725390)

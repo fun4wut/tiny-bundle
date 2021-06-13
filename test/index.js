@@ -1,6 +1,7 @@
-import { multiply } from './mul'
+import multiply from './mul'
 import sum from 'lodash-es/sum'
-import { at } from 'lodash-es'
+// import { at } from 'lodash-es'
 
 const onv = 333
-console.log(multiply(2, 3), sum[2,3,3], onv)
+export const aaa = multiply(2, onv)
+console.log(sum[2,3,3], )

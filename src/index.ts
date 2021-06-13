@@ -2,31 +2,37 @@ import * as JSParser from '@babel/parser'
 import { readFileSync } from 'fs'
 import find from 'find-package-json'
 import * as path from 'path'
-import { getExactName, getExactNpm } from './utils/file'
 import { Graph } from './graph'
 import ast, { Program, Statement } from '@babel/types'
+import { SymTbl } from './symbol'
+import { ImportsPlugin } from './traverse/imports'
+import { DeclPlugin } from './traverse/decl'
+import { IContext } from './traverse/types'
+import { Traverser } from './traverse'
 
 
 export class Bundler {
-    constructor(private initialEntry: string) {}
+    constructor(private initialEntry: string) {
+        this.traverser
+            .use(ImportsPlugin)
+            .use(DeclPlugin)
+    }
     private graph = new Graph()
+    private symTbl = new SymTbl()
+    private traverser = new Traverser()
     private pkgRoot = find(this.initialEntry).next().value
     private body: Array<Statement>
     private getImports(prog: Program, filePath: string) {
         const imports = new Array<string>()
         for (const stmt of prog.body) {
-            if (stmt.type === 'ImportDeclaration' || stmt.type === 'ExportNamedDeclaration') {
-                if (!stmt.source) {
-                    continue
-                }
-                const source = stmt.source.value
-                if (source.startsWith('.')) { // 相对路径
-                    imports.push(getExactName(path.join(path.dirname(filePath), source)))
-                } else { // npm package
-                    imports.push(getExactNpm(path.join(this.pkgRoot.__path, '../node_modules', source)))
-                }
+            const ctx: IContext = {
+                importsArr: imports,
+                filePath,
+                pkgPath: this.pkgRoot.__path,
+                stmt
             }
-
+            const fn = this.traverser.compose()
+            fn(ctx, () => console.log('traverse done'))
         }
         return imports
     }
@@ -50,10 +56,6 @@ export class Bundler {
     genDependencyArr() {
         this.collectDependency(this.initialEntry)
         return this.graph.topSort()
-    }
-
-    processSingleFile() {
-        
     }
 }
 

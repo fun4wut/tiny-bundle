@@ -18,6 +18,7 @@
   - [ ] Namespace
 - 优化
   - [ ] Parallel
+  - [ ] 循环引用
   - [ ] Tree Shaking
   - [ ] Dead Code Elimination
 ## 思路

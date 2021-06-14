@@ -1,10 +1,26 @@
 import ast from '@babel/types'
 
-enum SymType {
+enum SymbolKind {
     Function,
     Class,
-    Variable
+    Variable,
+    Unbound,
+    Other
 }
+
+interface IRef {
+    sourceIdx: number
+    innerIdx: number
+}
+
+interface ISymbol {
+    originName: string
+    useCount: number
+    kind: SymbolKind
+    link: IRef
+}
+
+type SymbolMap = IRef[][]
 
 export class SymTbl {
     tbl: Record<string, number> = {}

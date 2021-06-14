@@ -29,7 +29,7 @@ export function doTraverse(ctx: IContext) {
             ImportDeclaration: handleImportExport,
             ExportNamedDeclaration: handleImportExport,
             VariableDeclaration(path) {
-                
+                console.log(path.scope.hasReference('c'))
             }
         })
     } catch (error) {

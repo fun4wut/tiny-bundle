@@ -1,3 +1,8 @@
-import sum from 'lodash-es/sum'
-
-console.log(sum([2,3,4]))
+const c = 22
+function rua() {
+    const a = 233 + c
+    return () => {
+        const b = 456
+        return a
+    }
+}

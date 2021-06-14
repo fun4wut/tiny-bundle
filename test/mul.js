@@ -1,7 +1,5 @@
 import { add as plus } from './add'
-
+// import { onv as rua } from './index'
 const onv = 2
 
-const multiply = (a, b) => new Array(a).fill(b).reduce(plus, onv)
-
-export default multiply
+export const multiply = (a, b) => new Array(a).fill(b).reduce(plus, onv)

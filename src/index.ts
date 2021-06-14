@@ -1,12 +1,8 @@
-import * as JSParser from '@babel/parser'
-import traverse from '@babel/traverse'
-import { readFileSync } from 'fs'
 import find from 'find-package-json'
 import * as path from 'path'
 import { Graph } from './graph'
 import ast, { Program, Statement } from '@babel/types'
 import { SymTbl } from './symbol'
-import { ImportsPlugin } from './traverse/imports'
 import { IContext } from './traverse/types'
 import { doTraverse } from './traverse'
 
@@ -52,7 +48,7 @@ export class Bundler {
     }
 }
 
-const fileName = 'test/index.js' ?? process.argv[1]
+const fileName = 'test/bla.js' ?? process.argv[1]
 
 const initialEntry = path.join(process.cwd(), fileName)
 

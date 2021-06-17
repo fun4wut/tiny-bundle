@@ -26,7 +26,7 @@ export class SymTbl {
     tbl: Record<string, number> = {}
     addSymbol(s: string) {
         if (!this.tbl[s]) {
-            this.tbl[s] = 1
+            this.tbl[s] = 0
         }
         this.tbl[s]++
     }
@@ -36,7 +36,7 @@ export class SymTbl {
         }
         return `${s}${this.tbl[s]}`
     }
-    contains(s: string) {
-        return !!this.tbl[s]
+    isUnique(s: string) {
+        return this.tbl[s] === 1
     }
 }

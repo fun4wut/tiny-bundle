@@ -2,9 +2,11 @@ import find from 'find-package-json'
 import * as path from 'path'
 import { Graph } from './graph'
 import ast, { Program, Statement } from '@babel/types'
+import generate from '@babel/generator'
 import { SymTbl } from './symbol'
 import { IContext } from './traverse/types'
 import { doTraverse } from './traverse'
+import { writeFileSync } from 'fs'
 
 export class Bundler {
     constructor(private initialEntry: string) {
@@ -13,7 +15,6 @@ export class Bundler {
     private graph = new Graph()
     private symTbl = new SymTbl()
     private pkgRoot: find.PackageWithPath
-    private body: Array<Statement>
     private traverseFile(filePath: string) {
         const imports = new Array<string>()
         const bodyPart = new Array<Statement>()
@@ -26,6 +27,11 @@ export class Bundler {
             symTbl: this.symTbl
         }
         doTraverse(ctx)
+        this.graph.addEdges({
+            path: filePath,
+            depStr: imports,
+            prog: ctx.body
+        })
         return imports
     }
     
@@ -34,10 +40,6 @@ export class Bundler {
             return
         }
         const imports = this.traverseFile(entry)
-        this.graph.addEdges({
-            path: entry,
-            depStr: imports
-        })
         console.log(`${entry}'s deps collected`)
         imports.forEach(this.collectDependency)
     }
@@ -45,6 +47,12 @@ export class Bundler {
     genDependencyArr() {
         this.collectDependency(this.initialEntry)
         return this.graph.topSort()
+    }
+    
+    dump(p: string) {
+        const sortedAST = this.genDependencyArr().flatMap(v => v.prog)
+        const str = generate(ast.program(sortedAST)).code
+        writeFileSync(p, str)
     }
 }
 
@@ -54,4 +62,4 @@ const initialEntry = path.join(process.cwd(), fileName)
 
 const bundler = new Bundler(initialEntry)
 
-console.log(bundler.genDependencyArr())
+bundler.dump('test/tmp1.mjs')

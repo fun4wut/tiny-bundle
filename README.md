@@ -42,6 +42,7 @@
 | 别名导入 `import { x as y } from 'bar'` | 无视别名，仍然使用 `x`     |
 | 命名空间导入 `import * as mm from 'baz'` | 无视命名空间，使用原本命名   |
 | 默认导入 `import z from 'foo'`          | 使用 `foo_default` 代替 `z` |
+| Node自带的module                        | 维持使用import            |
 
 ## Bundle规则(ESM、CJS混编情况)
 
@@ -52,6 +53,7 @@
 | 顶层函数 `function`                     | 在顶层进行定义          |
 | 顶层变量 `var`, `let`, `const`, `class` | 顶层 `var` 声明，`init` 中定义 |
 | 顶层语句                                | `init` 中使用           |
+
 
 ## 实用的包
 - [Babel Parser(Code -> AST)](https://babeljs.io/docs/en/babel-parser)

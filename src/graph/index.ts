@@ -1,9 +1,9 @@
-import ast from '@babel/types'
+import ast, { Statement } from '@babel/types'
 export interface ModNode {
     path: string
     depStr: Array<string>
     depNode?: Array<ModNode>
-    // prog: ast.Program
+    prog: Array<Statement>
 }
 
 

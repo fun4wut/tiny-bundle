@@ -48,7 +48,7 @@ export class Bundler {
     }
 }
 
-const fileName = 'test/bla.js' ?? process.argv[1]
+const fileName = 'test/index.js' ?? process.argv[1]
 
 const initialEntry = path.join(process.cwd(), fileName)
 

@@ -36,4 +36,7 @@ export class SymTbl {
         }
         return `${s}${this.tbl[s]}`
     }
+    contains(s: string) {
+        return !!this.tbl[s]
+    }
 }

@@ -1,42 +1,42 @@
 import traverse, { NodePath } from '@babel/traverse'
-import JSParser from '@babel/parser'
 import * as ast from '@babel/types'
-import { getExactName, getExactNpm } from '../utils/file';
+import { getBaseName, getExactName, getExactNpm } from '../utils/file';
 import { IContext } from './types';
-import { join, dirname } from 'path'
-import { readFileSync } from 'fs';
 
 
 export function doTraverse(ctx: IContext) {
-    const { importsArr, pkgPath, filePath, symTbl } = ctx
-    function doRename(path: NodePath, id: ast.Identifier) {
-        symTbl.addSymbol(id.name)
-        if (!symTbl.isUnique(id.name)) {
-            console.log('dup!' + id.name)
-            path.scope.rename(id.name, symTbl.getSymbol(id.name))
-        }
-
-    }
-    const res = JSParser.parse(readFileSync(filePath).toString(), {
-        sourceType: "module"
-    })
+    const { mod, filePath } = ctx
 
     const handleLink = (path: NodePath<ast.ImportDeclaration | ast.ExportNamedDeclaration>) => {
-        const stmt = path.node
-        if (!stmt.source) { // 必须是 import from
-            return
-        }
-        const source = stmt.source.value
-        if (source.startsWith('.')) { // 相对路径
-            importsArr.push(getExactName(join(dirname(filePath), source)))
-        } else { // npm package
-            importsArr.push(getExactNpm(join(pkgPath, '../node_modules', source)))
-        }
         path.remove() // 删去import语句
     }
 
     const handleExportDefault = (path: NodePath<ast.ExportDefaultDeclaration>) => {
-        path.remove()
+        const declNode = path.node.declaration
+        let exprAST: ast.Expression
+        switch (declNode.type) {
+            case 'Identifier':
+                exprAST = ast.identifier(declNode.name)
+                break;
+            case 'FunctionDeclaration':
+                exprAST = { ...declNode, type: 'FunctionExpression' }
+                break
+            case 'ClassDeclaration':
+                exprAST = { ...declNode, type: 'ClassExpression' }
+                break
+            case 'TSDeclareFunction':
+                throw new Error("TS not supported yet");
+            default:
+                exprAST = declNode
+        }
+        const varName = `${getBaseName(mod.relPath)}_default`
+        const defaultVar = ast.variableDeclaration('var', [
+            ast.variableDeclarator(
+                ast.identifier(varName),
+                exprAST
+            )
+        ])
+        path.replaceWith(defaultVar)
     }
 
     const handleExportNamed = (path: NodePath<ast.ExportNamedDeclaration>) => {
@@ -48,11 +48,7 @@ export function doTraverse(ctx: IContext) {
             path.remove() // export没有定义新变量，直接remove
             return
         }
-        path.traverse({
-            VariableDeclaration: handleVar,
-            ClassDeclaration: handleClass,
-            FunctionDeclaration: handleFn
-        })
+        // 去除export，留下子声明
         path.replaceWith(path.node.declaration)
     }
 
@@ -60,7 +56,8 @@ export function doTraverse(ctx: IContext) {
         if (path.parent.type !== 'Program') {
             return
         }
-        doRename(path, path.node.id)
+        const newName = path.scope.generateUid(path.node.id.name)
+        path.scope.rename(path.node.id.name, newName)
     }
 
     const handleClass = (path: NodePath<ast.ClassDeclaration>) => {
@@ -70,6 +67,7 @@ export function doTraverse(ctx: IContext) {
         path.replaceWith(ast.variableDeclaration('var', [
             ast.variableDeclarator(classNode.id, {...classNode, type: 'ClassExpression', id: null})
         ]))
+        path.skip() // 产生了新的var节点，不需要再去做rename了，所以直接skip
     }
 
     const handleVar = (path: NodePath<ast.VariableDeclaration>) => {
@@ -78,14 +76,14 @@ export function doTraverse(ctx: IContext) {
         }
         for (const { id } of path.node.declarations) {
             if (id.type === 'Identifier') {
-                doRename(path, id)
+                path.scope.rename(id.name, path.scope.generateUid(id.name))
             }
         }
         path.node.kind = 'var' // const, let => var
     }
 
     try {
-        traverse(res, {
+        traverse(mod.prog, {
             ImportDeclaration: handleLink,
             ExportNamedDeclaration: handleExportNamed,
             VariableDeclaration: handleVar,
@@ -96,11 +94,10 @@ export function doTraverse(ctx: IContext) {
                 ast.removeComments(path.node)
             }
         })
-        const body = res.program.body
+        const body = mod.prog
         const withComment = ast.addComment(body[0], 'leading', filePath)
         body[0] = withComment
         ctx.body = body
-        
     } catch (error) {
         console.log('err', ctx)
         throw new Error(error);

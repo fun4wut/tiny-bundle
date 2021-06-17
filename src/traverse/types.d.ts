@@ -1,12 +1,13 @@
+import { Scope } from "@babel/traverse";
 import { Program, Statement } from "@babel/types";
+import { ModNode } from "../graph";
 import { SymTbl } from "../symbol";
 
 export interface IContext {
-    importsArr: Array<string>
+    mod: ModNode
     pkgPath: string
     filePath: string
     body: Array<Statement>
-    isSpecialStmt: boolean
     symTbl: SymTbl
 }
 

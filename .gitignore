@@ -1,2 +1,5 @@
 node_modules/
 tmp.*js
+tmp1.*js
+*.map
+.vscode/

@@ -41,7 +41,7 @@
 | 顶层语句                                | 顶层中使用              |
 | 别名导入 `import { x as y } from 'bar'` | 无视别名，仍然使用 `x`     |
 | 命名空间导入 `import * as mm from 'baz'` | 无视命名空间，使用原本命名   |
-| 默认导入 `import z from 'foo'`          | 使用 `foo_default` 代替 `z` |
+| 默认导入 `import z from 'foo'`          | 使用 `foo_default` 代替 `z` (最麻烦，会有命名重复问题) |
 | Node自带的module                        | 维持使用import            |
 
 ## Bundle规则(ESM、CJS混编情况)

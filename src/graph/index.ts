@@ -1,6 +1,7 @@
 import ast, { Statement } from '@babel/types'
 export interface ModNode {
     path: string
+    relPath: string
     depStr: Array<string>
     depNode?: Array<ModNode>
     prog: Array<Statement>

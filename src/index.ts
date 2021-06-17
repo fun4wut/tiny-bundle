@@ -1,12 +1,14 @@
 import find from 'find-package-json'
-import * as path from 'path'
-import { Graph } from './graph'
+import JSParser from '@babel/parser'
+import { join, dirname } from 'path'
+import { Graph, ModNode } from './graph'
 import ast, { Program, Statement } from '@babel/types'
 import generate from '@babel/generator'
 import { SymTbl } from './symbol'
 import { IContext } from './traverse/types'
 import { doTraverse } from './traverse'
-import { writeFileSync } from 'fs'
+import { writeFileSync, readFileSync } from 'fs'
+import { getBaseName, getExactName, getExactNpm, getRelPath } from './utils/file'
 
 export class Bundler {
     constructor(private initialEntry: string) {
@@ -15,33 +17,63 @@ export class Bundler {
     private graph = new Graph()
     private symTbl = new SymTbl()
     private pkgRoot: find.PackageWithPath
-    private traverseFile(filePath: string) {
-        const imports = new Array<string>()
-        const bodyPart = new Array<Statement>()
+
+    private getImports(filePath: string): ModNode {
+        const importsArr = []
+        const res = JSParser.parse(readFileSync(filePath).toString(), {
+            sourceType: "module"
+        })
+        for (const stmt of res.program.body) {
+            switch (stmt.type) {
+                case 'ImportDeclaration':
+                case 'ExportNamedDeclaration':
+                    if (!stmt.source) { // 必须是 import from
+                        continue
+                    }
+                    const source = stmt.source.value
+                    if (source.startsWith('.')) { // 相对路径
+                        importsArr.push(getExactName(join(dirname(filePath), source)))
+                    } else { // npm package
+                        importsArr.push(getExactNpm(join(this.pkgRoot.__path, '../node_modules', source)))
+                    }
+                    break
+                case 'ExportDefaultDeclaration':
+                    const varName = `${getBaseName(source)}_default`
+                    this.symTbl.addSymbol(varName) // 先直接加入符号表中，避免换名字
+                default:
+                    break
+            }
+
+
+        }
+        return {
+            path: filePath,
+            relPath: getRelPath(filePath, this.pkgRoot.__path),
+            depStr: importsArr,
+            prog: res.program.body,
+        }
+    }
+
+    private traverseAST(mod: ModNode) {
         const ctx: IContext = {
-            importsArr: imports,
-            filePath,
+            filePath: mod.path,
             pkgPath: this.pkgRoot.__path,
-            body: bodyPart,
-            isSpecialStmt: false,
-            symTbl: this.symTbl
+            body: mod.prog,
+            symTbl: this.symTbl,
+            mod
         }
         doTraverse(ctx)
-        this.graph.addEdges({
-            path: filePath,
-            depStr: imports,
-            prog: ctx.body
-        })
-        return imports
+
     }
     
     private collectDependency = (entry: string) => {
         if (this.graph.containsNode(entry)) {
             return
         }
-        const imports = this.traverseFile(entry)
-        console.log(`${entry}'s deps collected`)
-        imports.forEach(this.collectDependency)
+        const mod = this.getImports(entry)
+        this.graph.addEdges(mod)
+        // console.log(`${entry}'s deps collected`)
+        mod.depStr.forEach(this.collectDependency)
     }
 
     genDependencyArr() {
@@ -58,7 +90,7 @@ export class Bundler {
 
 const fileName = 'test/index.js' ?? process.argv[1]
 
-const initialEntry = path.join(process.cwd(), fileName)
+const initialEntry = join(process.cwd(), fileName)
 
 const bundler = new Bundler(initialEntry)
 

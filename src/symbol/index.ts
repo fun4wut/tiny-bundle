@@ -1,3 +1,4 @@
+import { Hub, NodePath, Scope } from '@babel/traverse'
 import ast from '@babel/types'
 
 enum SymbolKind {
@@ -13,30 +14,48 @@ interface IRef {
     innerIdx: number
 }
 
+export enum LinkType {
+    Import = 'import',
+    Export = 'export',
+    Local = 'local'
+}
+
 interface ISymbol {
-    originName: string
+    finalName: string
     useCount: number
-    kind: SymbolKind
-    link: IRef
+    linkType: LinkType
+    kind?: SymbolKind
+    link?: IRef
 }
 
 type SymbolMap = IRef[][]
 
-export class SymTbl {
-    tbl: Record<string, number> = {}
-    addSymbol(s: string) {
+export class SymTbl { // 只记录顶层symbol 
+    tbl: Record<string, ISymbol> = {}
+    addSymbol(s: string, path?: NodePath, linkType: LinkType = LinkType.Local) {
         if (!this.tbl[s]) {
-            this.tbl[s] = 0
-        }
-        this.tbl[s]++
-    }
-    getSymbol(s: string) {
-        if (this.tbl[s] === 1) {
+            this.tbl[s] = { useCount: 1, finalName: s, linkType }
             return s
         }
-        return `${s}${this.tbl[s]}`
+        
+        const rc = ++this.tbl[s].useCount
+        const prev = s + rc
+
+        let newName = prev, idx = 0
+        do {
+            newName = Array.from({ length: idx++ }).map(_ => '_') + prev
+        } while (path && path.scope.hasBinding(newName))
+        this.tbl[s].finalName = newName
+        return newName
+    }
+    getSymbol(s: string) {
+        return this.tbl[s]
     }
     isUnique(s: string) {
-        return this.tbl[s] === 1
+        console.log(s, this.tbl[s])
+        return this.tbl[s].useCount === 1
+    }
+    containsSymbol(s: string) {
+        return this.tbl[s] && this.tbl[s].useCount > 0
     }
 }

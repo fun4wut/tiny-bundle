@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import { join, dirname } from 'path'
+import { join, dirname, basename } from 'path'
 
 
 export function getExactName(path: string) {
@@ -23,4 +23,14 @@ export function getExactNpm(path: string) {
         }
     }
     return getExactName(path)
+}
+
+export function getBaseName(path: string) {
+    const withExt = basename(path)
+    return withExt.split('.')[0]
+}
+
+export function getRelPath(path: string, root: string) {
+    const len = root.length
+    return path.substr(len+1)
 }

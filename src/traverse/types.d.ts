@@ -7,7 +7,6 @@ export interface IContext {
     mod: ModNode
     pkgPath: string
     filePath: string
-    body: Array<Statement>
     symTbl: SymTbl
 }
 

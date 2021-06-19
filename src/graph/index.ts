@@ -1,10 +1,12 @@
-import ast, { Statement } from '@babel/types'
+import ast from '@babel/types'
 export interface ModNode {
     path: string
+    /** 相对于 package.json 的路径（去除扩展名） */
     relPath: string
-    depStr: Array<string>
+    /** import语句中的路径 -> 绝对路径 */
+    depStr: Map<string, string>
     depNode?: Array<ModNode>
-    prog: Array<Statement>
+    prog: ast.File
 }
 
 
@@ -19,13 +21,13 @@ export class Graph {
 
     addEdges(node: ModNode) {
         this.dict[node.path] = node
-        for (const s of node.depStr) {
+        for (const s of node.depStr.values()) {
             if (!this.edges[s]) {
                 this.edges[s] = []
             }
             this.edges[s].push(node)
         }
-        const cur = this.inDegree.get(node) || 0 + node.depStr.length
+        const cur = this.inDegree.get(node) || 0 + node.depStr.size
         this.inDegree.set(node, cur)
     }
 

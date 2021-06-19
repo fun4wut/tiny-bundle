@@ -37,7 +37,6 @@ export class SymTbl { // 只记录顶层symbol
             this.tbl[s] = { useCount: 1, finalName: s, linkType }
             return s
         }
-        
         const rc = ++this.tbl[s].useCount
         const prev = s + rc
 

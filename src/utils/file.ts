@@ -31,6 +31,8 @@ export function getBaseName(path: string) {
 }
 
 export function getRelPath(path: string, root: string) {
-    const len = root.length
-    return path.substr(len+1)
+    const len = dirname(root).length
+    return path.substr(len+1).split('.')[0]
 }
+
+export const convertPath = (path: string) => path.replace(/[\/\-]/g, '_')

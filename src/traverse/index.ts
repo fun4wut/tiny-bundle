@@ -1,13 +1,26 @@
 import traverse, { NodePath } from '@babel/traverse'
 import * as ast from '@babel/types'
-import { getBaseName, getExactName, getExactNpm } from '../utils/file';
+import { convertPath, getRelPath } from '../utils/file';
 import { IContext } from './types';
 
 
 export function doTraverse(ctx: IContext) {
-    const { mod, filePath } = ctx
+    const { mod, filePath, symTbl, pkgPath } = ctx
 
-    const handleLink = (path: NodePath<ast.ImportDeclaration | ast.ExportNamedDeclaration>) => {
+    const handleLink = (path: NodePath<ast.ImportDeclaration>) => {
+        const source = path.node.source.value
+        for (const spec of path.node.specifiers) {
+            if (spec.type === 'ImportDefaultSpecifier') {
+                const absolutePath = mod.depStr.get(source)
+                const relPath = getRelPath(absolutePath, pkgPath)
+                const newName = `${convertPath(relPath)}_default`
+                if (path.scope.hasBinding(newName)) { // 如果这个名字被占用，让占用的变量去换个名字
+                    const other = path.scope.generateUid(newName)
+                    path.scope.rename(newName, other)
+                }
+                path.scope.rename(spec.local.name, newName)
+            }            
+        }
         path.remove() // 删去import语句
     }
 
@@ -29,7 +42,7 @@ export function doTraverse(ctx: IContext) {
             default:
                 exprAST = declNode
         }
-        const varName = `${getBaseName(mod.relPath)}_default`
+        const varName = `${convertPath(mod.relPath)}_default`
         const defaultVar = ast.variableDeclaration('var', [
             ast.variableDeclarator(
                 ast.identifier(varName),
@@ -37,15 +50,12 @@ export function doTraverse(ctx: IContext) {
             )
         ])
         path.replaceWith(defaultVar)
+        path.skip()
     }
 
     const handleExportNamed = (path: NodePath<ast.ExportNamedDeclaration>) => {
-        if (path.node.source) {
-            handleLink(path) // export from 形式
-            return
-        }
         if (path.node.specifiers.length > 0) {
-            path.remove() // export没有定义新变量，直接remove
+            path.remove() // export {} 形式，直接remove
             return
         }
         // 去除export，留下子声明
@@ -56,8 +66,9 @@ export function doTraverse(ctx: IContext) {
         if (path.parent.type !== 'Program') {
             return
         }
-        const newName = path.scope.generateUid(path.node.id.name)
-        path.scope.rename(path.node.id.name, newName)
+        const oldName = path.node.id.name
+        const newName = symTbl.addSymbol(oldName)
+        path.scope.rename(oldName, newName)
     }
 
     const handleClass = (path: NodePath<ast.ClassDeclaration>) => {
@@ -76,7 +87,9 @@ export function doTraverse(ctx: IContext) {
         }
         for (const { id } of path.node.declarations) {
             if (id.type === 'Identifier') {
-                path.scope.rename(id.name, path.scope.generateUid(id.name))
+                const newName = symTbl.addSymbol(id.name)
+                // console.log(id.name, newName)
+                path.scope.rename(id.name, newName)
             }
         }
         path.node.kind = 'var' // const, let => var
@@ -94,10 +107,10 @@ export function doTraverse(ctx: IContext) {
                 ast.removeComments(path.node)
             }
         })
-        const body = mod.prog
+        const body = mod.prog.program.body
         const withComment = ast.addComment(body[0], 'leading', filePath)
         body[0] = withComment
-        ctx.body = body
+        mod.prog.program.body = body
     } catch (error) {
         console.log('err', ctx)
         throw new Error(error);

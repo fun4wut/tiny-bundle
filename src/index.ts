@@ -8,7 +8,7 @@ import { SymTbl } from './symbol'
 import { IContext } from './traverse/types'
 import { doTraverse } from './traverse'
 import { writeFileSync, readFileSync } from 'fs'
-import { getBaseName, getExactName, getExactNpm, getRelPath } from './utils/file'
+import { convertPath, getBaseName, getExactName, getExactNpm, getRelPath } from './utils/file'
 
 export class Bundler {
     constructor(private initialEntry: string) {
@@ -18,11 +18,19 @@ export class Bundler {
     private symTbl = new SymTbl()
     private pkgRoot: find.PackageWithPath
 
+    /**
+     * 从顶层遍历一遍ast，获取所依赖的路径，并且把 export default 加入到符号表中，
+     * 以确保import default 和 export default 是同一个名字的变量
+     * @param filePath 文件绝对路径
+     * @returns 节点
+     */
     private getImports(filePath: string): ModNode {
-        const importsArr = []
+        const importsMap = new Map<string, string>()
         const res = JSParser.parse(readFileSync(filePath).toString(), {
             sourceType: "module"
         })
+        const relPath = getRelPath(filePath, this.pkgRoot.__path)
+
         for (const stmt of res.program.body) {
             switch (stmt.type) {
                 case 'ImportDeclaration':
@@ -32,25 +40,23 @@ export class Bundler {
                     }
                     const source = stmt.source.value
                     if (source.startsWith('.')) { // 相对路径
-                        importsArr.push(getExactName(join(dirname(filePath), source)))
+                        importsMap.set(source, getExactName(join(dirname(filePath), source)))
                     } else { // npm package
-                        importsArr.push(getExactNpm(join(this.pkgRoot.__path, '../node_modules', source)))
+                        importsMap.set(source, getExactNpm(join(this.pkgRoot.__path, '../node_modules', source)))
                     }
                     break
                 case 'ExportDefaultDeclaration':
-                    const varName = `${getBaseName(source)}_default`
+                    const varName = `${convertPath(relPath)}_default`
                     this.symTbl.addSymbol(varName) // 先直接加入符号表中，避免换名字
                 default:
                     break
             }
-
-
         }
         return {
             path: filePath,
-            relPath: getRelPath(filePath, this.pkgRoot.__path),
-            depStr: importsArr,
-            prog: res.program.body,
+            relPath,
+            depStr: importsMap,
+            prog: res,
         }
     }
 
@@ -58,12 +64,10 @@ export class Bundler {
         const ctx: IContext = {
             filePath: mod.path,
             pkgPath: this.pkgRoot.__path,
-            body: mod.prog,
             symTbl: this.symTbl,
             mod
         }
         doTraverse(ctx)
-
     }
     
     private collectDependency = (entry: string) => {
@@ -82,7 +86,10 @@ export class Bundler {
     }
     
     dump(p: string) {
-        const sortedAST = this.genDependencyArr().flatMap(v => v.prog)
+        const sortedAST = this.genDependencyArr().flatMap(v => {
+            this.traverseAST(v)
+            return v.prog.program.body
+        })
         const str = generate(ast.program(sortedAST)).code
         writeFileSync(p, str)
     }

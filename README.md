@@ -6,15 +6,15 @@
 
 - import文件类型
   - [x] JS
-  - [ ] TS
   - [ ] JSON
+  - [ ] TS
 - import方式
   - [x] 本地文件
   - [x] node_modules
   - [ ] URL
   - [ ] Path alias
   - [x] Export from
-  - [ ] Default
+  - [x] Default
   - [ ] Namespace
 - 优化
   - [ ] Parallel

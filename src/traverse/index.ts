@@ -6,7 +6,7 @@ import { IContext } from './types';
 
 export function doTraverse(ctx: IContext) {
     const { mod, filePath, symTbl, pkgPath } = ctx
-
+    const nsSet= new Set<string>()
     const handleLink = (path: NodePath<ast.ImportDeclaration>) => {
         const source = path.node.source.value
         for (const spec of path.node.specifiers) {
@@ -19,7 +19,12 @@ export function doTraverse(ctx: IContext) {
                     path.scope.rename(newName, other)
                 }
                 path.scope.rename(spec.local.name, newName)
-            }            
+            }
+
+            if (spec.type === 'ImportNamespaceSpecifier') {
+                const ns = spec.local.name
+                nsSet.add(ns)
+            }
         }
         path.remove() // 删去import语句
     }
@@ -95,6 +100,15 @@ export function doTraverse(ctx: IContext) {
         path.node.kind = 'var' // const, let => var
     }
 
+    const handleNamespace = (path: NodePath<ast.MemberExpression>) => {
+        const obj = path.node.object
+        if (obj.type === 'Identifier') {
+            if (nsSet.has(obj.name)) {
+                path.replaceWith(path.node.property)
+            }
+        }
+    }
+
     try {
         traverse(mod.prog, {
             ImportDeclaration: handleLink,
@@ -103,6 +117,7 @@ export function doTraverse(ctx: IContext) {
             FunctionDeclaration: handleFn,
             ClassDeclaration: handleClass,
             ExportDefaultDeclaration: handleExportDefault,
+            MemberExpression: handleNamespace,
             enter(path) {
                 ast.removeComments(path.node)
             }

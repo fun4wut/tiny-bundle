@@ -15,7 +15,7 @@
   - [ ] Path alias
   - [x] Export from
   - [x] Default
-  - [ ] Namespace
+  - [x] Namespace
 - 优化
   - [ ] Parallel
   - [ ] 循环引用

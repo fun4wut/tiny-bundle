@@ -13,23 +13,29 @@ export function doTraverse(ctx: IContext) {
             if (spec.type === 'ImportDefaultSpecifier') {
                 const absolutePath = mod.depStr.get(source)
                 const relPath = getRelPath(absolutePath, pkgPath)
-                const newName = `${convertPath(relPath)}_default`
-                if (path.scope.hasBinding(newName)) { // 如果这个名字被占用，让占用的变量去换个名字
-                    const other = path.scope.generateUid(newName)
-                    path.scope.rename(newName, other)
+                const importName = `${convertPath(relPath)}_default`
+                if (path.scope.hasBinding(importName)) { // 如果这个名字被占用，让占用的变量去换个名字
+                    const other = path.scope.generateUid(importName)
+                    path.scope.rename(importName, other)
                 }
-                path.scope.rename(spec.local.name, newName)
+                path.scope.rename(spec.local.name, importName)
             }
             if (spec.type === 'ImportSpecifier') {
                 if (spec.imported.type === 'Identifier') {
-                    if (spec.imported.name !== spec.local.name) { // 处理 import {x as y}
-                        const importName = spec.imported.name
-                        if (path.scope.hasBinding(importName)) {
-                            const other = path.scope.generateUid(importName)
-                            path.scope.rename(importName, other)
-                        }
-                        path.scope.rename(spec.local.name, importName)
+                    let importName = spec.imported.name
+                    if (importName === spec.local.name) {
+                        continue
                     }
+                    if (importName === 'default') {
+                        const absolutePath = mod.depStr.get(source)
+                        const relPath = getRelPath(absolutePath, pkgPath)
+                        importName = `${convertPath(relPath)}_default`
+                    }
+                    if (path.scope.hasBinding(importName)) {
+                        const other = path.scope.generateUid(importName)
+                        path.scope.rename(importName, other)
+                    }
+                    path.scope.rename(spec.local.name, importName)
                 }
             }
             if (spec.type === 'ImportNamespaceSpecifier') {

@@ -20,7 +20,18 @@ export function doTraverse(ctx: IContext) {
                 }
                 path.scope.rename(spec.local.name, newName)
             }
-
+            if (spec.type === 'ImportSpecifier') {
+                if (spec.imported.type === 'Identifier') {
+                    if (spec.imported.name !== spec.local.name) { // 处理 import {x as y}
+                        const importName = spec.imported.name
+                        if (path.scope.hasBinding(importName)) {
+                            const other = path.scope.generateUid(importName)
+                            path.scope.rename(importName, other)
+                        }
+                        path.scope.rename(spec.local.name, importName)
+                    }
+                }
+            }
             if (spec.type === 'ImportNamespaceSpecifier') {
                 const ns = spec.local.name
                 nsSet.add(ns)

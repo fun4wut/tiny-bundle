@@ -16,3 +16,7 @@ export function add(a, b) {
     const c = onv.toFixed() + Number(e)
     return a + b + c
 }
+
+export function sub(a, b) {
+    return a - b
+}

@@ -1,5 +1,6 @@
 import ast from '@babel/types'
 export interface ModNode {
+    id: number
     path: string
     /** 相对于 package.json 的路径（去除扩展名） */
     relPath: string

@@ -30,7 +30,7 @@ export class Bundler {
             sourceType: "module"
         })
         const relPath = getRelPath(filePath, this.pkgRoot.__path)
-
+        let counter = 0
         for (const stmt of res.program.body) {
             switch (stmt.type) {
                 case 'ImportDeclaration':
@@ -53,6 +53,7 @@ export class Bundler {
             }
         }
         return {
+            id: counter++,
             path: filePath,
             relPath,
             depStr: importsMap,

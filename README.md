@@ -18,7 +18,7 @@
   - [x] Namespace
 - 优化
   - [ ] Parallel
-  - [ ] 循环引用
+  - [ ] 使用require形式（这种比较简单）
   - [ ] Tree Shaking
   - [ ] Dead Code Elimination
 ## 思路

@@ -6,3 +6,7 @@ function rua() {
         return a
     }
 }
+
+module.exports = {
+    rua
+}

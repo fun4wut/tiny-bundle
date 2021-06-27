@@ -24,7 +24,9 @@ export function doTraverse(ctx: IContext) {
             }
             // import { a as c } from 'bla'
             if (spec.type === 'ImportSpecifier' && spec.imported.type === 'Identifier') {
-                let importName = depNode.exportedSymbol.get(spec.imported.name) // 拿到最原始的变量名
+                // 拿到最原始的变量名
+                let importName = depNode.exportedSymbol.get(spec.imported.name) || spec.imported.name
+                console.log(importName, spec.local.name)
                 if (importName === spec.local.name) {
                     continue
                 }

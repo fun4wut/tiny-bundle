@@ -38,6 +38,7 @@ export class Bundler {
             switch (stmt.type) {
                 case 'ImportDeclaration':
                 case 'ExportNamedDeclaration':
+                case 'ExportAllDeclaration':
                     if (stmt.type === 'ExportNamedDeclaration') { // 单独处理 export { a as b }情况
                         for (const spec of stmt.specifiers) {
                             if (spec.type === 'ExportSpecifier' && spec.exported.type === 'Identifier') {

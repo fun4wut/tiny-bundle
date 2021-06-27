@@ -16,6 +16,7 @@
   - [x] Export from
   - [x] Default
   - [x] Namespace
+  - [ ] Dynamic Import
 - 优化
   - [ ] Parallel
   - [ ] 使用require形式（这种比较简单）
@@ -53,6 +54,12 @@
 | 顶层函数 `function`                     | 在顶层进行定义          |
 | 顶层变量 `var`, `let`, `const`, `class` | 顶层 `var` 声明，`init` 中定义 |
 | 顶层语句                                | `init` 中使用           |
+
+## TODO
+- [ ] Graph结构重构
+- [ ] `export { a as b }` 的处理
+- [ ] 单元测试
+- [ ] Dynamic Import处理
 
 
 ## 实用的包

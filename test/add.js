@@ -10,7 +10,7 @@ if (onv > Math.random()) {
     let rt = 11
     A.prototype.ddd = 'qq' + rt
 }
-export function add(a, b) {
+function add(a, b) {
     foo()
     const e = new A
     const c = onv.toFixed() + Number(e)
@@ -20,3 +20,5 @@ export function add(a, b) {
 export function sub(a, b) {
     return a - b
 }
+
+export { add as radd }

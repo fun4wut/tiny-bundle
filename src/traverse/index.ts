@@ -10,9 +10,11 @@ export function doTraverse(ctx: IContext) {
     const handleLink = (path: NodePath<ast.ImportDeclaration>) => {
         const source = path.node.source.value
         for (const spec of path.node.specifiers) {
+            const absolutePath = mod.depStr.get(source)
+            const relPath = getRelPath(absolutePath, pkgPath)
+            const depNode = mod.depNode.get(absolutePath)
+            // import A from 'bla
             if (spec.type === 'ImportDefaultSpecifier') {
-                const absolutePath = mod.depStr.get(source)
-                const relPath = getRelPath(absolutePath, pkgPath)
                 const importName = `${convertPath(relPath)}_default`
                 if (path.scope.hasBinding(importName)) { // 如果这个名字被占用，让占用的变量去换个名字
                     const other = path.scope.generateUid(importName)
@@ -20,24 +22,22 @@ export function doTraverse(ctx: IContext) {
                 }
                 path.scope.rename(spec.local.name, importName)
             }
-            if (spec.type === 'ImportSpecifier') {
-                if (spec.imported.type === 'Identifier') {
-                    let importName = spec.imported.name
-                    if (importName === spec.local.name) {
-                        continue
-                    }
-                    if (importName === 'default') {
-                        const absolutePath = mod.depStr.get(source)
-                        const relPath = getRelPath(absolutePath, pkgPath)
-                        importName = `${convertPath(relPath)}_default`
-                    }
-                    if (path.scope.hasBinding(importName)) {
-                        const other = path.scope.generateUid(importName)
-                        path.scope.rename(importName, other)
-                    }
-                    path.scope.rename(spec.local.name, importName)
+            // import { a as c } from 'bla'
+            if (spec.type === 'ImportSpecifier' && spec.imported.type === 'Identifier') {
+                let importName = depNode.exportedSymbol.get(spec.imported.name) // 拿到最原始的变量名
+                if (importName === spec.local.name) {
+                    continue
                 }
+                if (importName === 'default') {
+                    importName = `${convertPath(relPath)}_default`
+                }
+                if (path.scope.hasBinding(importName)) {
+                    const other = path.scope.generateUid(importName)
+                    path.scope.rename(importName, other)
+                }
+                path.scope.rename(spec.local.name, importName)
             }
+            // import * as b from 'bla'
             if (spec.type === 'ImportNamespaceSpecifier') {
                 const ns = spec.local.name
                 nsSet.add(ns)

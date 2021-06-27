@@ -56,8 +56,7 @@
 | 顶层语句                                | `init` 中使用           |
 
 ## TODO
-- [ ] Graph结构重构
-- [ ] `export { a as b }` 的处理
+- [x] `export { a as b }` 的处理
 - [ ] 单元测试
 - [ ] Dynamic Import处理
 

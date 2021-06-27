@@ -1,12 +1,16 @@
 import ast from '@babel/types'
 export interface ModNode {
     id: number
+    /** 绝对路径 */
     path: string
     /** 相对于 package.json 的路径（去除扩展名） */
     relPath: string
     /** import语句中的路径 -> 绝对路径 */
     depStr: Map<string, string>
-    depNode?: Array<ModNode>
+    /** 绝对路径 -> 对应的mod */
+    depNode: Map<string, ModNode>
+    /** 导出的符号，导出变量名 -> 原变量名 */
+    exportedSymbol: Map<string, string>
     prog: ast.File
 }
 
@@ -38,17 +42,13 @@ export class Graph {
         for (const [node, deg] of this.inDegree) {
             if (deg === 0) {
                 queue.push(node)
-                node.depNode = []
             }
         }
         while (queue.length > 0) {
             const v = queue.shift()
             res.push(v)
             for (const to of this.edges[v.path] || []) {
-                if (!to.depNode) {
-                    to.depNode = []
-                }
-                to.depNode.push(v)
+                to.depNode.set(v.path, v)
                 const ind = this.inDegree.get(to) - 1
                 this.inDegree.set(to, ind)
                 if (ind === 0) {

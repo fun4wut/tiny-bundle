@@ -29,13 +29,23 @@ export class Bundler {
         const res = JSParser.parse(readFileSync(filePath).toString(), {
             sourceType: "module"
         })
+        
         const relPath = getRelPath(filePath, this.pkgRoot.__path)
         let counter = 0
+        const exportedSymbol = new Map<string, string>()
+
         for (const stmt of res.program.body) {
             switch (stmt.type) {
                 case 'ImportDeclaration':
                 case 'ExportNamedDeclaration':
-                    if (!stmt.source) { // 必须是 import from
+                    if (stmt.type === 'ExportNamedDeclaration') { // 单独处理 export { a as b }情况
+                        for (const spec of stmt.specifiers) {
+                            if (spec.type === 'ExportSpecifier' && spec.exported.type === 'Identifier') {
+                                exportedSymbol.set(spec.exported.name, spec.local.name)
+                            }
+                        }
+                    }
+                    if (!stmt.source) { // 必须是 import from / export from
                         continue
                     }
                     const source = stmt.source.value
@@ -56,7 +66,9 @@ export class Bundler {
             id: counter++,
             path: filePath,
             relPath,
+            exportedSymbol,
             depStr: importsMap,
+            depNode: new Map(),
             prog: res,
         }
     }
